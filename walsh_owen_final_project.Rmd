@@ -1,0 +1,1045 @@
+---
+title: "WALSH_OWEN_final_project"
+author: "Owen Walsh"
+date: "2023-11-28"
+output: html_document
+---
+
+#### Step 1: Set global options and load packages
+```{r setup, include = TRUE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message= FALSE, warning = FALSE, include = TRUE, error = FALSE)
+
+
+library(tidyverse)                                                               #basic libraries I'll need 
+library(janitor)
+library(here)
+library(readxl)
+
+library(ggplot2)
+library(sf)                                                                       #loading sf and mapview so we can visualize geospatial data 
+library(mapview)
+library(data.table)
+library(RColorBrewer)                                                             
+library(ggplot2)
+library(cowplot)
+library(magick)                                                                   #ggplot2 for geospatial data and drawing 
+
+
+library(dataRetrieval)                                                            #package to load USGS groundwater data that's already extant                                                                                                                                                                     through this package 
+
+
+```
+
+#### Step 2: Import water use data; clean data
+```{r}
+
+#Importing in data for Figure 1 
+
+sbco_gw <- readNWISdata(countyCd = c("06083"),                                   #Loading in NWIS data for santa barbara county, with the fips code
+                    startDT = "2000-01-01",
+                    endDT = "2021-01-01",                                        #Only want 2000-2020
+                    siteStatus = "active",
+                    service="gwlevels")                                          #Only want active groundwater monitoring sites 
+
+sbco_precip <- read.csv(here("Data/Santa Barbara County Precip.csv")) |>         #Reading in data for precipitation for SB from NOAA 
+  clean_names()
+
+#Importing in data for Figure 2 
+
+ca_borders <- map_data("county", "california")                                   #Blank California counties map 
+
+kern_gw <- readNWISdata(countyCd = c("06029"),                                   #Now just reading in data for all counties. 
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",                                        #We only want data from 2011 to 2018 for drought data 
+                    siteStatus = "active",
+                    service="gwlevels")
+
+slo_gw <- readNWISdata(countyCd = c("06079"),
+                    startDT = "2011-01-01",                                      #Continue following the same format for each county 
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+sanbern_gw <- readNWISdata(countyCd = c("06071"),                                
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+ 
+#ventura_gw <- readNWISdata(countyCd = c("06111"),                               #Counties that are commented out did not have enough data          
+                    #startDT = "2011-01-01",                                     #Some have no data at all 
+                    #endDT = "2018-01-01",
+                    #siteStatus = "active",
+                    #service="gwlevels")
+
+la_gw <- readNWISdata(countyCd = c("06037"),                                     
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#orange_gw <- readNWISdata(countyCd = c("06059"),                               
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                    #siteStatus = "active",
+                   # service="gwlevels")
+
+imperial_gw <- readNWISdata(countyCd = c("06025"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+riverside_gw <- readNWISdata(countyCd = c("06065"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+sd_gw <- readNWISdata(countyCd = c("06073"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+alameda_gw <- readNWISdata(countyCd = c("06001"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#alpine_gw <- readNWISdata(countyCd = c("06003"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#amador_gw <- readNWISdata(countyCd = c("06005"),
+                   # startDT = "2011-01-01",
+                    #endDT = "2018-01-01",
+                    #siteStatus = "active",
+                    #service="gwlevels")
+
+#butte_gw <- readNWISdata(countyCd = c("06007"),
+                  #  startDT = "2011-01-01",
+                  #  endDT = "2018-01-01",
+                  #  siteStatus = "active",
+                   # service="gwlevels")
+
+#calaveras_gw <- readNWISdata(countyCd = c("06009"),
+                  #  startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+colusa_gw <- readNWISdata(countyCd = c("06011"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#contra_costa_gw <- readNWISdata(countyCd = c("06013"),
+                    #startDT = "2011-01-01",
+                    #endDT = "2018-01-01",
+                    #siteStatus = "active",
+                    #service="gwlevels")
+
+#del_norte_gw <- readNWISdata(countyCd = c("06015"),
+                    #startDT = "2011-01-01",
+                    #endDT = "2018-01-01",
+                    #siteStatus = "active",
+                    #service="gwlevels")
+
+#el_dorado_gw <- readNWISdata(countyCd = c("06017"),
+                    #startDT = "2011-01-01",
+                    #endDT = "2018-01-01",
+                    #siteStatus = "active",
+                    #service="gwlevels")
+
+fresno_gw <- readNWISdata(countyCd = c("06019"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+glenn_gw <- readNWISdata(countyCd = c("06021"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#humboldt_gw <- readNWISdata(countyCd = c("06023"),
+                  #  startDT = "2011-01-01",
+                  #  endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+inyo_gw <- readNWISdata(countyCd = c("06027"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#kings_gw <- readNWISdata(countyCd = c("06031"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#lake_gw <- readNWISdata(countyCd = c("06033"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#lassen_gw <- readNWISdata(countyCd = c("06035"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#madera_gw <- readNWISdata(countyCd = c("06039"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#marin_gw <- readNWISdata(countyCd = c("06041"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#mariposa_gw <- readNWISdata(countyCd = c("06043"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                    #service="gwlevels")
+
+#mendocino_gw <- readNWISdata(countyCd = c("06045"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+merced_gw <- readNWISdata(countyCd = c("06047"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+modoc_gw <- readNWISdata(countyCd = c("06049"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+mono_gw <- readNWISdata(countyCd = c("06051"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#monterey_gw <- readNWISdata(countyCd = c("06053"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#napa_gw <- readNWISdata(countyCd = c("06055"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#nevada_gw <- readNWISdata(countyCd = c("06057"),
+                  #  startDT = "2011-01-01",
+                  #  endDT = "2018-01-01",
+                  #  siteStatus = "active",
+                  #  service="gwlevels")
+
+#placer_gw <- readNWISdata(countyCd = c("06061"),
+                  #  startDT = "2011-01-01",
+                  #  endDT = "2018-01-01",
+                  #  siteStatus = "active",
+                  #  service="gwlevels")
+
+#plumas_gw <- readNWISdata(countyCd = c("06063"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+sacramento_gw <- readNWISdata(countyCd = c("06067"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#san_benito_gw <- readNWISdata(countyCd = c("06069"),
+                  #  startDT = "2011-01-01",
+                  #  endDT = "2018-01-01",
+                  #  siteStatus = "active",
+                   # service="gwlevels")
+
+#sf_gw <- readNWISdata(countyCd = c("06075"),
+                  #  startDT = "2011-01-01",
+                  #  endDT = "2018-01-01",
+                  #  siteStatus = "active",
+                  #  service="gwlevels")
+
+san_joaquin_gw <- readNWISdata(countyCd = c("06077"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#san_mateo_gw <- readNWISdata(countyCd = c("06081"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#santa_clara_gw <- readNWISdata(countyCd = c("06085"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#santa_cruz_gw <- readNWISdata(countyCd = c("06087"),
+                    #startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#shasta_gw <- readNWISdata(countyCd = c("06089"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#sierra_gw <- readNWISdata(countyCd = c("06091"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+siskiyou_gw <- readNWISdata(countyCd = c("06093"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#solano_gw <- readNWISdata(countyCd = c("06095"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#sonoma_gw <- readNWISdata(countyCd = c("06097"),
+                  #  startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+stanislaus_gw <- readNWISdata(countyCd = c("06099"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+sutter_gw <- readNWISdata(countyCd = c("06101"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#tehama_gw <- readNWISdata(countyCd = c("06103"),
+                  #  startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                  #  siteStatus = "active",
+                  #  service="gwlevels")
+
+#trinity_gw <- readNWISdata(countyCd = c("06105"),
+                   # startDT = "2011-01-01",
+                  #  endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+tulare_gw <- readNWISdata(countyCd = c("06107"),
+                    startDT = "2011-01-01",
+                    endDT = "2018-01-01",
+                    siteStatus = "active",
+                    service="gwlevels")
+
+#tuolumne_gw <- readNWISdata(countyCd = c("06109"),
+                  #  startDT = "2011-01-01",
+                  #  endDT = "2018-01-01",
+                  #  siteStatus = "active",
+                  #  service="gwlevels")
+
+#yolo_gw <- readNWISdata(countyCd = c("06113"),
+                   # startDT = "2011-01-01",
+                   # endDT = "2018-01-01",
+                   # siteStatus = "active",
+                   # service="gwlevels")
+
+#yuba_gw <- readNWISdata(countyCd = c("06115"),
+                  #  startDT = "2011-01-01",
+                  #  endDT = "2018-01-01",                                      #A large amount of counties do not have enough data to perform analyses of                                                                                        #  siteStatus = "active",
+                  #  service="gwlevels")                                            
+                  
+
+
+```
+
+**Q1: What data are you using?**
+I'm using time-series data for historical groundwater levels from 2002-2018 for Goleta, CA. This will be overlaid with precipitation data from nearby monitoring stations in Goleta. I am also using groundwater data for all CA counties from 2011-2017 for use in geospatial analysis. 
+
+**Q2: Where are the data from?**
+Groundwater data are from the NWIS, and precipitation data are from NOAA. 
+
+**Q3: Using these data, what research question(s) will you answer?**
+I will look at the correlation between precipitation data and groundwater datas. Specifically how large storm events affect groundwater levels (ie, infiltration) and how annual precipitation affects groundwater levels in Goleta, CA. I will then look at how the California megadrought of 2011-2017 affected groundwater levels throughout the state. 
+
+**Q4: What figures will you make to answer the proposed research question?**
+My first figure will be a plot of California groundwater levels each year from 2000-2020. A line graph will run with it, showing precipitation data for the same set of years. The x axis will show years 2000-2020. The left y axis will show the water level in feet below ground level, averaged from each station for each year. The right y axis will show precipation in inches, averaged from each station annually. My time-series length will be 20 years, the total number of data points will be 40. For Figure 2, I want to create a map using my GIS knowledge on groundwater levelsin the California counties I'm analyzing. 
+**Q5: What is the main point of each of your figures?**
+Figure 1 will look at the correlation between groundwater levels and precipitation data. It can help us analyze how much we'll need to prepare for climate change, with less groundwater recharge with less precipitation. Figure 2 will look at differences between massive losses in groundwater levels throughout the state during the drought. 
+
+**Q6: Why did you choose the data that you chose? Why did you choose the topic that you choose?**
+I'm very interested in availability of water, specifically in an agricultural heavy, yet dry state like California, with the advent of climate change. My topics all reflect this interest. 
+
+**Q7: In what ways are you hoping this project challenges you?**
+I'm hoping this project really forces me to recall all the functions we've learned throughout the quarter without looking at examples, and forces me to learn plenty of new ones, analyzing completely new data sets with completely different rules. I'm very excited about the data I found. It took me an extremely long time (like 5 hours of total searching) to find data that worked and I was excited about.
+
+#### Step 3: Organize data for plotting 
+```{r}
+
+
+
+goleta_gw <- sbco_gw |>
+             separate("lev_dt",                                                  #Separate out the year from the date column so I can calculate the                                                                                                                                                               average, doing so by the hyphen -
+                      into = c("year",
+                               "month",
+                               "day"),
+                      sep = "-") |> 
+            select(site_no, year, lev_va) |>                                     #Selecting only the site no, the new year column, and the gw levels
+            group_by(site_no, year) |>                                           #Grouping by both site number and year so the average values can be calculated per year at each site for the 20 years                                                                                                                                                                        
+            summarize_at(vars(1), mean, na.rm = TRUE) |>                         #Calculating the mean for each year and removing na values         
+            ungroup()                                                            
+
+site_info <- readNWISsite(goleta_gw$site_no) |>                                  #Reading in site info and cleaning the column names so geospatial data can be added                                                                                   
+  clean_names()
+
+goleta_gwjoin <- goleta_gw |>                                                     
+            inner_join(site_info, by = "site_no") |>                              #Joining the site info metadata with the goleta gw data frame 
+            select(site_no, year, lev_va, map_nm, 
+                   lat = dec_lat_va, 
+                   lon = dec_long_va) |>                                          #Only selecting needed columns, like location name and changing the lat and longitude columns to be more easily readable                                                                                                                                                                                                                                                                                                                                                           
+            filter(map_nm %in% c("GOLETA", 
+                                 "GOLETA, CA", 
+                                 "Goleta", 
+                                 "Goleta, CA"))                                  #Only choosing location names that correspond to Goleta  
+  
+goleta_precip <- sbco_precip |> 
+  select(name, date, emxp, prcp) |>                                               #Selecting only the days with max precipitation, annual precip, and station name                                                                                   
+  filter(!name %in% c("JUNCAL DAM, CA US", "SANTA BARBARA 1.9 NE, CA US", 
+                      "GIBRALTAR DAM NUMBER 2, CA US", "LOS PRIETOS CALIFORNIA, CA US", 
+                      "SANTA BARBARA 11 W, CA US", "SANTA BARBARA 4.7 WNW, CA US", 
+                      "SANTA BARBARA, CA US", "GOLETA 3.7 WNW, CA US", 
+                      "MONTECITO CALIFORNIA, CA US", 
+                      "MONTECITO CALIFORNIA, CA US")) |>                                                                                                                                                                                                                                                         #Filtering out location names that do not correspond to Santa Barbara Airport (which is in Goleta, and the chosen best place for analysis)                                                                                                                                                                             
+  filter(!date %in% c("2000", "2001")) |>                                         #Taking out 2000 and 2001 because these are NA values (no data available )                                                                                       
+  select(year = date, max_precip_day = emxp, total_precp = prcp) |>               
+                                                                                  #Now changing the column names to be more readable 
+  mutate_at(vars(1),as.numeric, na.rm = TRUE)                                     #Changing the years column to numerics from character to match groundwater data to plot down the road                                                                                     
+
+ 
+
+```
+
+
+#### Step 3a: Analyzing which groundwater wells are closest to Santa Barbara Airport, in Goleta, CA. Yellow wells were chosen for my analysis, because of their proximity and location on soft surfaces in parks. 
+```{r, fig.width = 10, fig.height = 6}
+
+goleta_gwsf <- st_as_sf(goleta_gwjoin, coords = c("lon","lat"), crs = 4326) |>   #Converting groundwater stations to a geospatial raster from the                                                                                                                                                                 coordinates and utilizing WGS 1984 spatial reference with "crs" 
+  mutate(highlight_points = ifelse(site_no %in% c("342552119512101", 
+                                                  "342620119513801"),            #Highlighting the chosen points that are closest to the Airport 
+                                   TRUE, FALSE))                                 #If the sites correspond to numbers in vector, they will be  highlighted                                                                                                                                                              
+
+chosen_sites <- mapview(goleta_gwsf, 
+                        xcol = "lon", 
+                        ycol = "lat",                                           #Putting sf object in the mapviewer, utilizing the lat and long values                                                                                       
+                        zcol = "highlight_points",                              #Zcol will highlight points different colors based on True or false factors, so the new highlight points column goes here                                                                                  
+                        grid = FALSE, crs = 4269,                               #Matching same geospatial reference of WGS 1984 and removing the grid  
+                        legend = FALSE,                                         #Having legend not show on the map 
+                        map.types = c("OpenStreetMap.DE"))                      #Selecting this map for use, as it shows streets and location data 
+
+                                                                                #The yellow points are the selected wells for analysis 
+
+chosen_sites
+
+
+```
+ 
+#### Step 3B: Filtering out the wells for just the two chosen monitoring sites 
+```{r}
+goleta_wells <- goleta_gwjoin |> 
+  filter(site_no %in% c("342552119512101","342620119513801")) |>                #Choosing only the two wells shown above on the map
+  filter(!year %in% c("2000", "2001")) |>                                       #Filtering out 2000 and 2001, because there is no precipitation data for these years and the plot would look off                                                                                 
+  mutate_at(vars(2), as.numeric, na.rm = TRUE)                                  #Changing the years column to numerics 
+```
+ 
+#### Step 4: Plot Figure 1: Comparing precipitation and groundwater levels in Goleta, CA and the effect large storm events have on infiltration
+```{r, fig.width = 10, fig.height = 6}
+
+ggplot() +
+   geom_col(data = goleta_wells,                                                      
+           aes(
+             x = year,
+             y = lev_va, fill = site_no),                                       #Having both sites side by side for each year with fill 
+           position = "dodge",                                                  #Unstacking sites with dodge and specificying distance between bars
+           width = 0.5) + 
+  scale_fill_manual(labels = c("Goleta Slough Monitoring Site", "Cathedral Oaks Monitoring Site"),   #Changing the labels to reflect well location
+                    values = c("#deebf7", "#9ecae1"),                                                #Changing the colors of each location 
+                    name = NULL) +                                                                   #Removing legend title 
+  geom_line(data = goleta_precip, aes(x = year, y = total_precp, color = "#084594"), size = 2) +     #Adding max precipitation for the year as line
+  geom_point(data = goleta_precip, aes(x = year, y = total_precp), color = "#084594", size = 2) +    #Max precip points 
+  geom_line(data = goleta_precip, aes(x = year, y = max_precip_day, color = "#4292c6"), size = 2) +  #Adding max precip in a day for the year as line
+  geom_point(data = goleta_precip, aes(x = year, y = max_precip_day), color = "#4292c6", size = 2) + #Max precip in a day points 
+   scale_y_continuous(limits = c(0,30),                                                              #Setting limits at 30 max to remove blank sapce       
+                      sec.axis = dup_axis(trans = ~.,                                                #Duplicating the axis because the scale is the same (around 0-25 for both axes)                                                                                                   
+                                          name = "Precipitation (inches)")) +                        #Adding a name for the second axis 
+    scale_color_manual(labels = c("Total precipitation (inches/year)", "Max precipitation in a day (inches)"),  
+                    values = c("#084594", "#4292c6"),                                                #Adding to the legend both lines, removing the name again                                                                                                         
+                    name = NULL) +                                                                   
+    labs(x = "Year", 
+         y = "Water level (ft below land surface)", 
+         caption = " Figure 1. Water Levels at Two Monitoring Stations and Precipitation in Goleta, CA from 2002-2020.
+ Data from NWIS. Created by Owen Walsh.") +                                                          #Adding x and left y axis labels, and a caption
+
+theme_bw() +             
+  theme(legend.position = "top", legend.title = element_text(size = 10, color = "black"),            #Putting the legend on top, and changing element text for better readability                                                                                                       
+        axis.text = element_text(size = 8, color = "black"),
+        axis.title = element_text(size = 12, color = "black", face = "bold"),
+        plot.caption = element_text(hjust = 0, size = 14, face = "bold"))                             #The title and caption should both be bold,  while hjust = 0 plots the caption as left aligned                                                                                                                                                                                                                     
+
+
+
+
+```
+
+
+
+**Q1: What is the take home message of this figure?**
+
+The take home message of this figure is that even with increases in precipitation from 2015 onward, water levels at both monitoring sites were still decreasing. This paints a dark picture, as it means groundwater levels are not being recharged even when Goleta experiences years with above average precipitation. 
+
+**Q2: What is most (or least) surprising?** 
+
+The least surprising part of this graph is that groundwater levels in these two wells have decreased significantly since the turn of the century. Groundwater depletion is a real problem in Southern California, and these wells reflect that underlying issue. Most surprising is that large storm events apppear to not be extremely correlated with increases in groundwater levels, at least at these two wells, as peaks in the Max Precipitation in a day line do not line up with increases in water levels. 
+
+**Q3: What are 5 new functions you learned? Explain what each of them does.**
+
+Scale_color_manual worked to add the correct colors and labels to the already existing legend, because scale_fill_manual could not take in these values or colors for both the line and bar graphs. 
+Sec.axis(dup_axis(trans ~.,)) worked to duplicate the first axis, as the values for both axes were in the same range. Name took care of differentiating between the two values. 
+st_as_sf converted my string element to a geospatial sf element, so that it could be joined by coordinates and mapped out using these coordinates later. 
+ifelse was able to add a column to my geospatial data using mutate saying either TRUE or FALSE, True equating to the sites I chose to analyze and false for the ones I did not (this new column was highlight_points). 
+Mapview was then able to take in the highlighted points and plot them as seperate colors, using zcol to highlight each one according to the TRUE or FALSE variables, while crs made sure the map would show up correctly and the points would correspond to the same latitude, using the WGS 1984 projection system. 
+
+There are a lot more, like map_data, readNWISsite, and readNWISdata, that I could not have performed this project without. 
+
+#### Step 5: Organize data for Plot 2: Greatest Depletion of Water Levels in each SoCal county
+```{r, warning = FALSE}
+  
+sb_dep <- sbco_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",                                       #Performing the same analysis on each county, where I seperate out the year, group by site_no and year, and find the mean
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |>                                                                  
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |>                            #However, the years change for this analysis, as I want to look at the CA megadrought from 2011 to 2017
+              mutate(diff = lev_va - lag(lev_va)) |>                            #Using lag to subtract 2011 values from 2017 values after we filtered out only these years, and adding it to a new column called diff 
+              ungroup() 
+
+sb_max <- round(max(sb_dep$diff, na.rm = TRUE), 2)                              #Finding the max difference in each well, and rounding that to two decimal points for clarity while removing NA values 
+  
+print(paste(sb_max, "feet is how much the water in Santa Barbara County's worst-off well decreased by from 2011-2017"))    #Printing both tbe max value and a character string to show how much water was lost. 
+
+kern_dep <- kern_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |>                                    #Now following the same process for all counties where there is enough data 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+kern_max <- round(max(kern_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(kern_max, "feet is how much the water in Kern County's worst-off well decreased by from 2011-2017"))
+
+sanbern_dep <- sanbern_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+sanbern_max <- round(max(sanbern_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(sanbern_max, "feet is how much the water in San Bernadino's County's worst-off well decreased by from 2011-2017"))
+
+la_dep <- la_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+la_max <- round(max(la_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(la_max, "feet is how much the water in Los Angeles County's worst-off well decreased by from 2011-2017"))
+
+imperial_dep <- imperial_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+imperial_max <- round(max(imperial_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(imperial_max, "feet is how much the water in Imperial County's worst-off well decreased by from 2011-2017"))
+
+riverside_dep <- riverside_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+riverside_max <- round(max(riverside_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(riverside_max, "feet is how much the water in Riverside County's worst-off well decreased by from 2011-2017"))
+
+sd_dep <- sd_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+sd_max <- round(max(sd_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(sd_max, "feet is how much the water in San Diego County's worst-off well decreased by from 2011-2017"))
+
+slo_dep <- slo_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+slo_max <- round(max(slo_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(slo_max, "feet is how much the water in San Luis Obispo County's worst-off well decreased by from 2011-2017"))
+
+alameda_dep <- alameda_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+alameda_max <- round(max(alameda_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(sd_max, "feet is how much the water in Alameda County's worst-off well decreased by from 2011-2017"))
+
+colusa_dep <- colusa_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2012", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+colusa_max <- round(max(colusa_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(colusa_max, "feet is how much the water in Colusa County's worst-off well decreased by from 2011-2017"))
+
+fresno_dep <- fresno_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+fresno_max <- round(max(fresno_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(fresno_max, "feet is how much the water in Fresno County's worst-off well decreased by from 2011-2017"))
+
+glenn_dep <- glenn_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2012", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+glenn_max <- round(max(glenn_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(glenn_max, "feet is how much the water in Glenn County's worst-off well decreased by from 2011-2017"))
+
+inyo_dep <- inyo_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+inyo_max <- round(max(inyo_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(inyo_max, "feet is how much the water in Inyo County's worst-off well decreased by from 2011-2017"))
+
+merced_dep <- merced_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2016")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+merced_max <- round(max(merced_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(merced_max, "feet is how much the water in Merced County's worst-off well decreased by from 2011-2017"))
+
+modoc_dep <- modoc_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+modoc_max <- round(max(modoc_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(modoc_max, "feet is how much the water in Modoc County's worst-off well decreased by from 2011-2017"))
+
+mono_dep <- mono_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+mono_max <- round(max(mono_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(mono_max, "feet is how much the water in Mono County's worst-off well decreased by from 2011-2017"))
+
+sacramento_dep <- sacramento_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+sacramento_max <- round(max(sacramento_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(sd_max, "feet is how much the water in Sacramento County's worst-off well decreased by from 2011-2017"))
+
+san_joaquin_dep <- san_joaquin_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+san_joaquin_max <- round(max(san_joaquin_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(san_joaquin_max, "feet is how much the water in San Joaquin County's worst-off well decreased by from 2011-2017"))
+
+siskiyou_dep <- siskiyou_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+siskiyou_max <- round(max(siskiyou_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(siskiyou_max, "feet is how much the water in Siskiyou County's worst-off well decreased by from 2011-2017"))
+
+stanislaus_dep <- stanislaus_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+stanislaus_max <- round(max(stanislaus_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(stanislaus_max, "feet is how much the water in Stanislaus County's worst-off well decreased by from 2011-2017"))
+
+sutter_dep <- sutter_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2012", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+sutter_max <- round(max(sutter_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(sutter_max, "feet is how much the water in Sutter County's worst-off well decreased by from 2011-2017"))
+
+tulare_dep <- tulare_gw |>
+               separate("lev_dt",
+                        into = c("year",
+                                 "month",
+                                 "day"),
+                        sep = "-") |> 
+              select(site_no, year, lev_va) |> 
+              group_by(site_no, year) |> 
+              summarize_at(vars(1), mean, na.rm = TRUE) |> 
+              filter(year %in% c("2011", "2017")) |> 
+              mutate(diff = lev_va - lag(lev_va)) |> 
+              ungroup() 
+
+tulare_max <- round(max(tulare_dep$diff, na.rm = TRUE), 2)
+  
+print(paste(tulare_max, "feet is how much the water in Tulare County's worst-off well decreased by from 2011-2017"))       #Below, I create a vector with all the county names 
+
+#Creating a vector for each county so that I can join it to CA map data 
+
+subregion <- c("santa barbara", "san diego", "los angeles", "imperial", "san bernardino", "ventura", "san luis obispo", "orange", "kern", "riverside", "yolo", "yuba", "tuolumne", "trinity", "tehama", "alpine", "amador", "butte", "calaveras", "contra costa", "del norte", "el dorado", "humboldt", "kings", "lake", "lassen", "madera", "marin", "mariposa", "mendocino", "monterey", "napa", "nevada", "plumas", "placer", "san benito", "san mateo", "santa clara", "santa cruz", "san francisco", "shasta", "sierra", "solano", "sonoma", "alameda", "colusa", "fresno", "glenn", "inyo", "merced", "modoc", "mono", "sacramento", "san joaquin", "siskiyou", "stanislaus", "sutter", "tulare")
+  
+#Creating a vector for each maximum decrease in groundwater levels per county 
+
+max_decrease <- c(sb_max, sd_max, la_max, imperial_max, sanbern_max, NA, slo_max, NA, kern_max, riverside_max, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, alameda_max, colusa_max, fresno_max, glenn_max, inyo_max, merced_max, modoc_max, mono_max, sacramento_max, san_joaquin_max, siskiyou_max, stanislaus_max, sutter_max, tulare_max)
+
+                                                  
+
+ca_map <- data.frame(subregion, max_decrease) |>                                                                      
+  left_join(ca_borders, by = "subregion")                                                                             #Creating a data frame out of these two vectors and joining to CA mcounties map data by the subregion column 
+
+
+
+```
+#### Step 6: Plot Figure 2: Largest California groundwater level decreases during the drought years of 2011-2017
+```{r, fig.width = 8, fig.height = 6}
+
+map_decrease <- ggplot(ca_map, aes(x = long, y = lat, group = group)) +                                               #Starting out with a basic map. Group = group will draw the lines as they appear in ca_map
+  geom_polygon(aes(fill = max_decrease), color = "black")                                                              #Geom_polygon will fill in each county with a gradient of the max_decrease column
+
+map_decrease2 <- map_decrease +  
+  scale_fill_gradient(name =                                                                                           #Now calling the base map to make more in depth edits 
+"Maximum decrease in groundwater level (in feet)",                                                                     #Labeling the legend, and creating my own color scale for the gradient, while setting the NA color 
+low = "#bdd7e7", 
+high = "#08519c", 
+na.value = "grey50") + 
+  labs(caption = "Figure 2: Maximum decrease in groundwater levels in each California county from the drought years of 2011-2017. 
+Data from NWIS. Created by Owen Walsh. Gray areas correspond to counties where there wasn't enough data available") +     #Captioning the overarching plot 
+  theme_bw() +                                                                                                        #Utiliing a simple theme to start 
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(),                                                                                #Element_blank with all these arguments will remove any axis text (that read lat and long) and tick marks
+        axis.ticks = element_blank(), 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_blank(),
+        legend.title = element_text(size = 8, face = "bold"),                                                                                                                                                                
+        legend.text = element_text(size = 8, face = "bold"),                                                          #Having the legend title and text smaller but bold to be easily legible
+        plot.caption = element_text(size = 10, face = "bold", hjust = 0),                                             #Setting caption size and alignment in the left corner with hjust 
+        panel.grid.major = element_blank(),                                                                           #Removing grid lines that appeared under the map after the caption was inputted 
+        panel.grid.minor = element_blank(),
+        rect = element_blank())                                                                                       #Removing rectangle around plot to make it look cleaner                                                                                      
+
+
+#ggdraw() + 
+ # draw_image("C:/Users/owent/OneDrive/Desktop/compass.png", scale = 20, x = 1,                                       #I tried to plot a compass for a while, but there must be a bug in the image, because it ran fine but                                                                                                                           would not show up 
+  #  hjust = 1, halign = 1, valign = 0) + 
+  #draw_plot(map_decrease2)
+
+map_decrease2
+
+
+```
+
+
+#### Step 6A: Cleaning data and plotting just Southern California because of an absence of data throughout the state. 
+```{r, fig.width = 9, fig.height = 5}
+
+socal_borders <- ca_map |> 
+  select(socal_subregion = subregion, max_decrease, long, lat, group, order, region)                                                        #Editing parameters just slightly so that we only see Socal counties 
+
+socal_subregion <- c("santa barbara", "san diego", "los angeles", "imperial", "san bernardino", "ventura", "san luis obispo", "orange", "kern", "riverside")
+max_decrease_socal <- c(sb_max, sd_max, la_max, imperial_max, sanbern_max, NA, slo_max, NA, kern_max, riverside_max)                        #Performing same tasks as above 
+
+socal_map_plot <- data.frame(socal_subregion, max_decrease_socal) |> 
+  left_join(socal_borders, by = "socal_subregion")
+
+
+map_decrease_socal <- ggplot(socal_map_plot, aes(x = long, y = lat, group = group)) +              
+  geom_polygon(aes(fill = max_decrease_socal), color = "black")
+
+
+map_decrease_socal2 <- map_decrease_socal + 
+  scale_fill_gradient(name = 
+"Maximum decrease in groundwater level (in feet)", 
+low = "#bdd7e7", 
+high = "#08519c", 
+na.value = "grey50") + 
+  labs(caption = "Figure 3: Maximum decrease in groundwater levels in Southern California counties from drought years of 2011-2017.       
+Data from NWIS. Created by Owen Walsh.") +                                                                                            #Still following same idea, but just changing the caption to reflect new plot 
+  theme_bw() + 
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.ticks = element_blank(), 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_blank(),
+        legend.title = element_text(size = 8, face = "bold"),                                                                 #Theme worked well for last plot, no need to change it 
+        legend.text = element_text(size = 8, face = "bold"), 
+        plot.caption = element_text(size = 11, face = "bold", hjust = 0),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        rect = element_blank()) 
+
+
+map_decrease_socal2
+
+
+```
+
+
+**Q1: What is the take home message of this figure?**
+
+Two things--one, Southern California experienced devastating groundwater depletion in the wells that have been impacted the most by the drought. San Bernadino County in particular saw a massive maximum decrease in the water level. Two--Northern California needs to do a much better job at tracking groundwater data. It is an area that is naturally less water stressed, with more precipitation and less people. This is reflected in the data that was available--which wasn't much! Groundwater levels must be tracked with climate change and a massive population already affecting the world's water supply, and Northern California won't be any less impacted by this. It's especially egregious to not have data during the megadrought years, and in affluent countiess like Marin, Santa Clara, Santa Cruz, and San Francisco to boot.
+
+**Q2: What is most (or least) surprising?** 
+The least surprising theme is that Southern California is significantly more water stressed than Northern California. As someone who came down to Santa Barbara from Northern California, I've directly seen the differences in precipitation between the two. Southern California consistently has to resort to groundwater pumping, and that idea is reflected in the worst off wells in the area, many of which lost 100+ feet of groundwater. 
+
+**Q3: What are 5 new functions you learned? Explain what each of them does.**
+Seperate() let me seperate the date into day, month and year columns, using the argument sep to divide by the hyphen in all columns. 
+Lag(lev_va) allowed me to subtract each value by the following value, vital for calculating the difference between the years 2011 and 2017 in all datasets. It took a while to figure out how to accurately do this. 
+Max allowed me to calculate the maximum difference between years in each county, vital for the final map. 
+Paste allowed me to write in both a value from a calculating and a string in the same sentence, and print allowed me to show the reader the value in the knitted html. (technically 2 functions)
+Geom_polygon allowed me to fill values on a map with already downloaded map data, while group in the aesthetics let ggplot draw the borders correctly. 
+Scale_fill_gradient let me decide my own scale colors and legend name to reflect on the map, while na.value set the color for the counties with not enough data, which ended up being vital. 
+
+Overall, this project took me multiple long, long days of coding and googling to find functions that worked for the dataset, and I'm very grateful for the opportunity to show it off to potential employers. Thank you! 
